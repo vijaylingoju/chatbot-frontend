@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatGPT Clone</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #343541;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        #chat-container {
+            width: 400px;
+            height: 500px;
+            background-color: #444654;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        #chat-box {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+        .message {
+            max-width: 80%;
+            padding: 10px;
+            margin: 5px;
+            border-radius: 10px;
+        }
+        .user-message {
+            align-self: flex-end;
+            background-color: #0084ff;
+            color: white;
+        }
+        .bot-message {
+            align-self: flex-start;
+            background-color: #575a66;
+        }
+        #input-container {
+            display: flex;
+            padding: 10px;
+            background-color: #40414f;
+            border-top: 1px solid #555;
+        }
+        #user-input {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            outline: none;
+            background-color: #565869;
+            color: white;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            cursor: pointer;
+            background-color: #0084ff;
+            color: white;
+            margin-left: 5px;
+            border-radius: 5px;
+        }
+        .typing {
+            font-style: italic;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <div id="chat-container">
+        <div class="message bot-message">Hello! How can I help you today?</div>
+        <div id="chat-box"></div>
+        <div id="input-container">
+            <input type="text" id="user-input" placeholder="Type a message..." onkeypress="handleKeyPress(event)">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        async function sendMessage() {
+            const input = document.getElementById("user-input");
+            const chatBox = document.getElementById("chat-box");
+
+            const userMessage = input.value.trim();
+            if (!userMessage) return;
+
+            // Append user message
+            chatBox.innerHTML += `<div class="message user-message">${userMessage}</div>`;
+            input.value = "";
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // Show typing indicator
+            const typingIndicator = document.createElement("div");
+            typingIndicator.classList.add("message", "bot-message", "typing");
+            typingIndicator.textContent = "Bot is typing...";
+            chatBox.appendChild(typingIndicator);
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            try {
+                const response = await fetch("http://localhost:5000/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: userMessage })
+                });
+
+                const data = await response.json();
+                chatBox.removeChild(typingIndicator);
+
+                if (data.reply && typeof data.reply === "string") {
+                    chatBox.innerHTML += `<div class="message bot-message">${data.reply}</div>`;
+                } else {
+                    chatBox.innerHTML += `<div class="message bot-message">Error: Invalid API response</div>`;
+                }
+            } catch (error) {
+                chatBox.removeChild(typingIndicator);
+                chatBox.innerHTML += `<div class="message bot-message">Error connecting to server</div>`;
+            }
+
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        }
+    </script>
+</body>
+</html>
